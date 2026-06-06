@@ -1,0 +1,2 @@
+video_id,platform,account,product_id,video_url,posted_date,language,hook,views,likes,comments,shares,product_clicks,orders,notes
+V001,TikTok,example_account,P001,https://www.tiktok.com/@example/video/123,2026-06-05,en-ms,"Messy cabinet in small apartment?",120000,5200,340,280,1300,42,"before/after storage angle worked"

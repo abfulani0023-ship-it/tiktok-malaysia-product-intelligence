@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RM15-RM50 3C数码选品图文看板</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d9e1ea;
+      --soft: #f5f7fa;
+      --blue: #2563eb;
+      --teal: #0f766e;
+      --gold: #b45309;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: #dfe5ec;
+      line-height: 1.5;
+    }
+    .page {
+      width: min(210mm, calc(100% - 28px));
+      min-height: 297mm;
+      margin: 18px auto;
+      padding: 16mm;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+    }
+    header {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+    h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
+    h2 { margin: 4px 0 10px; font-size: 20px; letter-spacing: 0; }
+    h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: 0; }
+    p { margin: 0; }
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .report-meta span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #334155;
+      background: #fbfdff;
+      font-size: 12px;
+    }
+    .subtitle { color: var(--muted); max-width: 860px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .kpi span { color: var(--muted); font-size: 13px; }
+    .kpi b { display: block; font-size: 28px; margin-top: 4px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
+    .rank-row { display: grid; grid-template-columns: 32px 1fr 58px; gap: 10px; align-items: center; margin: 12px 0; }
+    .rank-num { color: var(--muted); font-weight: 700; text-align: right; }
+    .rank-label { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+    .rank-label span { color: var(--muted); white-space: nowrap; }
+    .rank-bar, .bar { height: 9px; background: #e8edf3; border-radius: 99px; overflow: hidden; margin-top: 5px; }
+    .rank-bar span, .bar span { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+    .rank-score { font-weight: 700; text-align: right; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { text-align: left; color: var(--muted); font-size: 12px; }
+    .product-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .product-top { display: grid; grid-template-columns: 76px 1fr auto; gap: 16px; align-items: start; }
+    .thumb {
+      width: 76px;
+      height: 76px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #dce8f5, #ffffff);
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: #1d4ed8;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .eyebrow { color: var(--muted); font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chips span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: #334155;
+      background: #fbfdff;
+    }
+    .score { text-align: right; min-width: 86px; }
+    .score b { display: block; font-size: 34px; line-height: 1; }
+    .score span { color: var(--muted); }
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    ul, ol { margin: 0; padding-left: 20px; }
+    li { margin: 5px 0; }
+    .pain { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 16px 0; }
+    .pain b { display: block; margin-bottom: 4px; }
+    .score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .metric { min-width: 0; }
+    .metric-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+    .metric-head b { color: var(--ink); white-space: nowrap; }
+    .hooks { margin-top: 16px; }
+    .link { display: inline-block; margin-top: 12px; color: var(--blue); text-decoration: none; font-weight: 700; }
+    .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .print-footer { display: none; }
+    @media (max-width: 860px) {
+      .page { width: calc(100% - 20px); padding: 14px; margin: 10px auto; }
+      .kpis, .two-col, .card-grid, .score-grid { grid-template-columns: 1fr; }
+      .product-top { grid-template-columns: 60px 1fr; }
+      .thumb { width: 60px; height: 60px; }
+      .score { grid-column: 1 / -1; text-align: left; }
+      h1 { font-size: 24px; }
+    }
+    @page {
+      size: A4;
+      margin: 14mm 12mm;
+    }
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body {
+        background: #ffffff;
+        font-size: 11px;
+      }
+      .page {
+        max-width: none;
+        width: 100%;
+        min-height: auto;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        box-shadow: none;
+      }
+      header {
+        padding: 18px;
+        margin-bottom: 10px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 16px; }
+      h3 { font-size: 12px; }
+      .kpis {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .kpi {
+        padding: 10px;
+      }
+      .kpi b {
+        font-size: 22px;
+      }
+      .two-col {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .panel, .product-card {
+        border-radius: 6px;
+        padding: 14px;
+        margin-bottom: 10px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .product-card {
+        break-inside: avoid-page;
+      }
+      .product-top {
+        grid-template-columns: 56px 1fr 68px;
+        gap: 10px;
+      }
+      .thumb {
+        width: 56px;
+        height: 56px;
+      }
+      .score b {
+        font-size: 24px;
+      }
+      .chips {
+        gap: 5px;
+      }
+      .chips span {
+        min-height: 22px;
+        padding: 2px 7px;
+        font-size: 10px;
+      }
+      .score-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .card-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .rank-row {
+        margin: 8px 0;
+      }
+      th, td {
+        padding: 6px 5px;
+      }
+      .link {
+        color: #334155;
+        font-weight: 400;
+      }
+      .print-footer {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>RM15-RM50 3C数码选品图文看板</h1>
+      <p class="subtitle">面向 TikTok 马来西亚出单，基于 Amazon US / SG / UK 热门/上升趋势信号、评论痛点、视频表现力、价格带、物流售后和合规风险做综合评分。数据为公开趋势研究与手工候选品整理，后续可替换为实时抓取数据。</p>
+      <div class="report-meta">
+        <span>目标市场：TikTok Malaysia</span>
+        <span>监控站点：Amazon US / SG / UK</span>
+        <span>价格带：RM15-RM50</span>
+        <span>类目：3C数码轻小件</span>
+        <span>输出：选品评分 + 脚本Hook</span>
+      </div>
+    </header>
+
+    <section class="kpis">
+      <div class="kpi"><span>候选商品</span><b>20</b></div>
+      <div class="kpi"><span>建议放量测试</span><b>7</b></div>
+      <div class="kpi"><span>建议小批量测试</span><b>13</b></div>
+      <div class="kpi"><span>平均综合分</span><b>72.7</b></div>
+    </section>
+
+    <section class="two-col">
+      <div class="panel">
+        <h2>Top 10 综合排行</h2>
+        
+            <div class="rank-row">
+              <div class="rank-num">1</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>电子清洁凝胶</b><span>RM33</span></div>
+                <div class="rank-bar"><span style="width:100.0%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">77.9</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">2</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>4口USB Hub</b><span>RM47</span></div>
+                <div class="rank-bar"><span style="width:99.2%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">77.3</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">3</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>磁吸手机环支架</b><span>RM33</span></div>
+                <div class="rank-bar"><span style="width:97.9%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">76.3</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">4</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>桌面理线夹</b><span>RM30</span></div>
+                <div class="rank-bar"><span style="width:97.9%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">76.3</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">5</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>电视LED氛围灯</b><span>RM47</span></div>
+                <div class="rank-bar"><span style="width:97.3%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">75.8</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">6</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>充电线保护套</b><span>RM28</span></div>
+                <div class="rank-bar"><span style="width:97.1%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">75.7</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">7</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>USB-C领夹麦</b><span>RM47</span></div>
+                <div class="rank-bar"><span style="width:96.9%; background:#0f766e"></span></div>
+              </div>
+              <div class="rank-score">75.5</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">8</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>USB-C防尘塞</b><span>RM23</span></div>
+                <div class="rank-bar"><span style="width:94.6%; background:#2563eb"></span></div>
+              </div>
+              <div class="rank-score">73.7</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">9</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>折叠手机支架</b><span>RM35</span></div>
+                <div class="rank-bar"><span style="width:94.6%; background:#2563eb"></span></div>
+              </div>
+              <div class="rank-score">73.7</div>
+            </div>
+            
+
+            <div class="rank-row">
+              <div class="rank-num">10</div>
+              <div class="rank-main">
+                <div class="rank-label"><b>USB-C转接头</b><span>RM28</span></div>
+                <div class="rank-bar"><span style="width:94.1%; background:#2563eb"></span></div>
+              </div>
+              <div class="rank-score">73.4</div>
+            </div>
+            
+        <p class="note">分数越高，代表越适合先用 TikTok 马来西亚短视频测试。不是越高越一定爆，而是更值得优先花素材和账号流量。</p>
+      </div>
+      <div class="panel">
+        <h2>评分维度</h2>
+        <table>
+          <thead><tr><th>维度</th><th>权重</th><th>判断依据</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Amazon趋势</td>
+              <td>20</td>
+              <td>热度、销量估算、评论增长、BSR、降价信号</td>
+            </tr>
+            
+
+            <tr>
+              <td>痛点清晰</td>
+              <td>15</td>
+              <td>评论痛点是否明确，能不能直接转成视频开头</td>
+            </tr>
+            
+
+            <tr>
+              <td>视频表现</td>
+              <td>15</td>
+              <td>能否做before/after、对比、演示、爽感镜头</td>
+            </tr>
+            
+
+            <tr>
+              <td>马来适配</td>
+              <td>15</td>
+              <td>是否适合马来西亚天气、通勤、租房、办公和日常消费</td>
+            </tr>
+            
+
+            <tr>
+              <td>价格带</td>
+              <td>10</td>
+              <td>是否落在RM15-RM50/RM80附近的冲动消费区间</td>
+            </tr>
+            
+
+            <tr>
+              <td>物流售后</td>
+              <td>10</td>
+              <td>越高代表越轻小、低破损、低售后</td>
+            </tr>
+            
+
+            <tr>
+              <td>竞争余量</td>
+              <td>10</td>
+              <td>越高代表竞争压力相对更小</td>
+            </tr>
+            
+
+            <tr>
+              <td>合规安全</td>
+              <td>5</td>
+              <td>越高代表越低侵权、低夸大功效、低平台风险</td>
+            </tr>
+            </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>为什么最后选这些品</h2>
+      <p>本轮选品按这个假设执行：If a product is exploding or about to explode on Amazon US, SG, or UK, it deserves fast validation for TikTok Malaysia. 但进入测试池前还要看价格、轻小件属性、视频表现力、评论痛点、马来西亚场景和风险。比如清洁凝胶、USB Hub、理线夹、电视氛围灯、领夹麦，都能在 3 秒内让用户看到问题和结果，这比单纯讲参数更适合 TikTok Shop 转化。</p>
+    </section>
+
+    
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>USB</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#1 · P011 · Computer Accessories</div>
+                  <h2>Keyboard Cleaning Gel and Electronics Dust Cleaner Kit</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM33</span>
+                    <span>19% review growth</span>
+                    <span>6500 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>77.9</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>keyboard crumbs; dusty car vents; laptop looks dirty; hard to clean tiny gaps</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.6/20</b></div>
+              <div class="bar"><span style="width:72.9%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>9.4/15</b></div>
+              <div class="bar"><span style="width:62.5%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with keyboard crumbs?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=keyboard+cleaning+gel+electronics+dust+cleaner">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>USB</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#2 · P001 · Computer Accessories</div>
+                  <h2>4-Port USB 3.0 Hub for Laptop Desk Setup</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM47</span>
+                    <span>18% review growth</span>
+                    <span>9000 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>77.3</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>laptop has too few ports; messy desk cables; students need cheap setup upgrade</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>15.2/20</b></div>
+              <div class="bar"><span style="width:76.2%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>8.1/15</b></div>
+              <div class="bar"><span style="width:53.8%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with laptop has too few ports?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=4+port+usb+3.0+hub">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#3 · P007 · Phone Accessories</div>
+                  <h2>Magnetic Phone Ring Holder Stand</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM33</span>
+                    <span>17% review growth</span>
+                    <span>6000 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>76.3</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>phone slips while scrolling; hard to watch videos hands free; commuting grip</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.3/20</b></div>
+              <div class="bar"><span style="width:71.6%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>8.0/15</b></div>
+              <div class="bar"><span style="width:53.1%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with phone slips while scrolling?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=magnetic+phone+ring+holder+stand">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>USB</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#4 · P013 · Computer Accessories</div>
+                  <h2>Silicone Cable Clips Desk Organizer 6-Pack</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM30</span>
+                    <span>16% review growth</span>
+                    <span>7000 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>76.3</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>cables fall behind desk; messy charging corner; hard to find cable at night</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.3/20</b></div>
+              <div class="bar"><span style="width:71.8%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>7.9/15</b></div>
+              <div class="bar"><span style="width:52.8%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with cables fall behind desk?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=silicone+cable+clips+desk+organizer">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>LED</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#5 · P002 · Lighting &amp; Electronics</div>
+                  <h2>USB TV LED Backlight Strip Kit</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM47</span>
+                    <span>16% review growth</span>
+                    <span>7600 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>75.8</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li><li>要先验证质量、发热、胶粘性或兼容性</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>watching TV in dark room; eye strain; room looks boring; cheap room upgrade</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.6/20</b></div>
+              <div class="bar"><span style="width:72.9%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>9.3/15</b></div>
+              <div class="bar"><span style="width:61.8%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>6.0/10</b></div>
+              <div class="bar"><span style="width:60.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with watching TV in dark room?</li><li>Bilik nampak lagi mahal, tapi modal kecil saja.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=usb+tv+led+backlight">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#6 · P012 · Phone Accessories</div>
+                  <h2>Cable Protector Spiral Saver 20-Pack</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM28</span>
+                    <span>18% review growth</span>
+                    <span>4800 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>75.7</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>charging cable breaks at the end; kids damage cables; cables look messy</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.0/20</b></div>
+              <div class="bar"><span style="width:70.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>7.7/15</b></div>
+              <div class="bar"><span style="width:51.4%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with charging cable breaks at the end?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=cable+protector+spiral+saver">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>MIC</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#7 · P015 · Audio Accessories</div>
+                  <h2>Wired USB-C Lavalier Microphone for Phone</h2>
+                  <div class="chips">
+                    <span style="border-color:#0f766e; color:#0f766e">scale-test</span>
+                    <span>RM47</span>
+                    <span>21% review growth</span>
+                    <span>4200 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#0f766e">
+                  <b>75.5</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li><li>不同手机兼容性要实测，避免夸大降噪</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>voice sounds noisy; outdoor recording bad; TikTok seller needs clear audio</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.7/20</b></div>
+              <div class="bar"><span style="width:73.3%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>7.9/15</b></div>
+              <div class="bar"><span style="width:52.5%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>3.0/5</b></div>
+              <div class="bar"><span style="width:60.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with voice sounds noisy?</li><li>Suara clear lagi senang orang percaya bila buat video jualan.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=usb+c+lavalier+microphone+phone">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#8 · P019 · Phone Accessories</div>
+                  <h2>Anti-Dust Charging Port Plug Set for USB-C Phone</h2>
+                  <div class="chips">
+                    <span style="border-color:#2563eb; color:#2563eb">test</span>
+                    <span>RM23</span>
+                    <span>15% review growth</span>
+                    <span>2600 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#2563eb">
+                  <b>73.7</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>主要风险是同质化，需要用本地场景提高转化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>dust in charging port; beach and rain exposure; phone charging gets unstable</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>12.8/20</b></div>
+              <div class="bar"><span style="width:63.8%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>8.0/15</b></div>
+              <div class="bar"><span style="width:53.1%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>12.0/15</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>4.0/10</b></div>
+              <div class="bar"><span style="width:40.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with dust in charging port?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=usb+c+charging+port+dust+plug">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#9 · P009 · Phone Accessories</div>
+                  <h2>Adjustable Foldable Phone Stand for Desk</h2>
+                  <div class="chips">
+                    <span style="border-color:#2563eb; color:#2563eb">test</span>
+                    <span>RM35</span>
+                    <span>11% review growth</span>
+                    <span>15000 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#2563eb">
+                  <b>73.7</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>neck hurts looking down; phone falls on desk; need hands-free video calls</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>13.9/20</b></div>
+              <div class="bar"><span style="width:69.5%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>7.8/15</b></div>
+              <div class="bar"><span style="width:52.1%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>0.0/10</b></div>
+              <div class="bar"><span style="width:0.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with neck hurts looking down?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=adjustable+foldable+phone+stand">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>USB</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#10 · P004 · Computer Accessories</div>
+                  <h2>USB-C to USB-A Adapter 3-Pack</h2>
+                  <div class="chips">
+                    <span style="border-color:#2563eb; color:#2563eb">test</span>
+                    <span>RM28</span>
+                    <span>14% review growth</span>
+                    <span>8500 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#2563eb">
+                  <b>73.4</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>new laptop has no USB-A port; old accessories cannot connect; easy to lose adapters</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>14.0/20</b></div>
+              <div class="bar"><span style="width:70.2%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>8.3/15</b></div>
+              <div class="bar"><span style="width:55.5%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>12.0/15</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with new laptop has no USB-A port?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=usb+c+to+usb+adapter+3+pack">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#11 · P014 · Phone Accessories</div>
+                  <h2>3-in-1 Phone Lens Clip Macro Wide Angle Fisheye</h2>
+                  <div class="chips">
+                    <span style="border-color:#2563eb; color:#2563eb">test</span>
+                    <span>RM47</span>
+                    <span>10% review growth</span>
+                    <span>3500 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#2563eb">
+                  <b>71.8</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>视频表现强，适合做对比、演示或before/after</li><li>价格处在低决策门槛区间</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>phone camera cannot capture close details; want better product shots; cheap creator tool</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>12.2/20</b></div>
+              <div class="bar"><span style="width:61.1%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>8.6/15</b></div>
+              <div class="bar"><span style="width:57.3%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>12.0/15</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>2.0/10</b></div>
+              <div class="bar"><span style="width:20.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with phone camera cannot capture close details?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=3+in+1+phone+lens+clip">打开 Amazon 搜索参考</a>
+            </article>
+            
+
+            <article class="product-card">
+              <div class="product-top">
+                <div class="thumb">
+                  <span>PHN</span>
+                </div>
+                <div>
+                  <div class="eyebrow">#12 · P003 · Phone Accessories</div>
+                  <h2>Tempered Glass Screen Protector 3-Pack for iPhone</h2>
+                  <div class="chips">
+                    <span style="border-color:#2563eb; color:#2563eb">test</span>
+                    <span>RM33</span>
+                    <span>12% review growth</span>
+                    <span>20000 est. monthly sales</span>
+                  </div>
+                </div>
+                <div class="score" style="color:#2563eb">
+                  <b>71.5</b>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div class="card-grid">
+                <section>
+                  <h3>为什么选中</h3>
+                  <ul><li>马来西亚日常场景贴合度高</li><li>价格处在低决策门槛区间</li><li>Amazon热度和上升信号较强</li></ul>
+                </section>
+                <section>
+                  <h3>主要风险</h3>
+                  <ul><li>竞争较强，需要靠场景和脚本差异化</li><li>型号碎片化明显，库存管理难度高</li></ul>
+                </section>
+              </div>
+              <div class="pain">
+                <b>评论痛点</b>
+                <p>phone screen scratches; expensive repair; hard to align protector</p>
+              </div>
+              <div class="score-grid">
+                
+            <div class="metric">
+              <div class="metric-head"><span>Amazon趋势</span><b>15.1/20</b></div>
+              <div class="bar"><span style="width:75.4%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>痛点清晰</span><b>7.4/15</b></div>
+              <div class="bar"><span style="width:49.3%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>视频表现</span><b>12.0/15</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>马来适配</span><b>15.0/15</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>价格带</span><b>10.0/10</b></div>
+              <div class="bar"><span style="width:100.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>物流售后</span><b>8.0/10</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>竞争余量</span><b>0.0/10</b></div>
+              <div class="bar"><span style="width:0.0%"></span></div>
+            </div>
+            
+
+            <div class="metric">
+              <div class="metric-head"><span>合规安全</span><b>4.0/5</b></div>
+              <div class="bar"><span style="width:80.0%"></span></div>
+            </div>
+            
+              </div>
+              <div class="hooks">
+                <h3>可直接测试的Hook</h3>
+                <ol><li>Still dealing with phone screen scratches?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li><li>Cheap solution vs this one. Which works better?</li></ol>
+              </div>
+              <a class="link" href="https://www.amazon.com/s?k=tempered+glass+screen+protector+3+pack">打开 Amazon 搜索参考</a>
+            </article>
+            
+    <p class="print-footer">Generated from local product intelligence pipeline. Use this report for first-round testing decisions, not as a guarantee of sales performance.</p>
+  </main>
+</body>
+</html>

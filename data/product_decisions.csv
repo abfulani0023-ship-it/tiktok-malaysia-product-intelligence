@@ -1,0 +1,2 @@
+decision_date,product_id,decision,status,reason,next_action
+2026-06-05,P001,test,queued,"High score, clear before/after visual, good Malaysia home fit","Generate 20 script variants"

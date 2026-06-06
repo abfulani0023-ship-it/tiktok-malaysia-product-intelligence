@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>每日跨境选品数据看板 Daily Product Intelligence</title>
+  <style>
+    :root {
+      --ink:#152033; --muted:#64748b; --line:#d8e0ea; --soft:#f4f7fb; --card:#fff;
+      --blue:#2563eb; --teal:#0f766e; --gold:#b45309; --red:#be123c;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#e6ebf1; color:var(--ink); font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.45; }
+    .page { width:min(1180px, calc(100% - 28px)); margin:18px auto; }
+    .hero { background:#fff; border:1px solid var(--line); border-radius:8px; padding:26px; margin-bottom:14px; }
+    .hero h1 { margin:0 0 8px; font-size:30px; letter-spacing:0; }
+    .hero p { margin:0; color:var(--muted); max-width:900px; }
+    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .meta span,.tag-pos,.tag-neg { border:1px solid var(--line); border-radius:999px; padding:5px 10px; font-size:12px; background:#fbfdff; }
+    .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+    .kpi { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px; }
+    .kpi span { color:var(--muted); font-size:12px; }
+    .kpi b { display:block; font-size:25px; margin-top:4px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .panel,.evidence-card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:18px; }
+    h2 { margin:0 0 12px; font-size:20px; letter-spacing:0; }
+    h3 { margin:0 0 5px; font-size:19px; letter-spacing:0; }
+    h4 { margin:0 0 7px; font-size:13px; letter-spacing:0; }
+    .hbar-row { display:grid; grid-template-columns:170px 1fr 56px; gap:9px; align-items:center; margin:9px 0; font-size:13px; }
+    .hbar-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hbar-track { height:10px; background:#edf2f7; border-radius:999px; overflow:hidden; }
+    .hbar-track span { display:block; height:100%; border-radius:999px; }
+    .hbar-value { text-align:right; font-weight:700; }
+    .market-stack { display:flex; height:34px; overflow:hidden; border-radius:6px; border:1px solid var(--line); margin-top:10px; }
+    .market-stack span { display:grid; place-items:center; background:#dbeafe; color:#1d4ed8; font-size:12px; font-weight:700; border-right:1px solid #fff; }
+    table { width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+    th,td { padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-size:12px; text-align:left; }
+    td small { display:block; color:var(--muted); margin-top:3px; }
+    .evidence-card { margin-bottom:14px; break-inside:avoid; }
+    .card-head { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }
+    .card-head p { margin:0; color:var(--muted); font-size:13px; }
+    .rank-pill { display:inline-block; background:#ecfdf5; color:#0f766e; border:1px solid #99f6e4; border-radius:999px; padding:3px 8px; font-size:12px; margin-bottom:8px; }
+    .big-score { text-align:right; font-size:36px; font-weight:800; color:#0f766e; }
+    .big-score span { display:block; color:var(--muted); font-size:12px; font-weight:400; }
+    .data-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:15px 0; }
+    .data-strip div { background:var(--soft); border:1px solid var(--line); border-radius:6px; padding:9px; }
+    .data-strip b { display:block; font-size:18px; }
+    .data-strip span { color:var(--muted); font-size:11px; }
+    .stack { display:flex; height:14px; border-radius:999px; overflow:hidden; background:#edf2f7; }
+    .stack span { display:block; height:100%; }
+    .legend-mini { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; color:var(--muted); font-size:10px; margin-top:5px; }
+    .insight-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+    .tags { display:flex; flex-wrap:wrap; gap:6px; }
+    .tag-pos { border-color:#99f6e4; color:#0f766e; background:#f0fdfa; }
+    .tag-neg { border-color:#fecdd3; color:#be123c; background:#fff1f2; }
+    .comment-box,.opportunity,.hooks { margin-top:12px; padding:12px; border:1px solid var(--line); border-radius:6px; background:#fbfdff; }
+    .comment-box p,.opportunity p { margin:0; }
+    .hooks ol { margin:0; padding-left:19px; }
+    a { color:var(--blue); text-decoration:none; font-weight:700; display:inline-block; margin-top:10px; }
+    .product-layout { display:grid; grid-template-columns:180px 1fr; gap:18px; align-items:start; }
+    .product-image {
+      width:180px;
+      aspect-ratio:1 / 1;
+      border:1px solid var(--line);
+      border-radius:8px;
+      background:#f8fafc;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+      position:sticky;
+      top:12px;
+    }
+    .product-image img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      background:#fff;
+    }
+    .image-placeholder {
+      width:100%;
+      height:100%;
+      display:grid;
+      place-items:center;
+      align-content:center;
+      gap:8px;
+      color:#64748b;
+      text-align:center;
+      padding:16px;
+    }
+    .image-placeholder b {
+      color:#2563eb;
+      font-size:22px;
+      letter-spacing:0;
+    }
+    .image-placeholder span {
+      font-size:12px;
+      line-height:1.4;
+    }
+    @media (max-width:900px) { .kpis,.grid,.data-strip,.insight-grid,.product-layout { grid-template-columns:1fr; } .hbar-row { grid-template-columns:1fr; } .product-image { width:100%; max-width:260px; position:static; } }
+    @page { size:A4; margin:12mm; }
+    @media print {
+      body { background:#fff; font-size:11px; }
+      .page { width:100%; margin:0; }
+      .hero,.panel,.evidence-card,.kpi { break-inside:avoid; box-shadow:none; }
+      * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>每日跨境选品数据看板 / Daily Product Intelligence</h1>
+      <p>监控 Amazon US / SG / UK 的热门/上升商品，把“可能在 Amazon 爆或即将爆”的商品转成 TikTok Malaysia 测试池。核心英文指标会保留，中文负责解释，方便你快速判断。</p>
+      <div class="meta">
+        <span>目标 Target：TikTok Malaysia</span><span>站点 Source：Amazon US / SG / UK</span><span>价格 Price：RM15-RM80</span><span>重点 Focus：3C数码轻小件</span>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi"><span>候选商品 Candidates</span><b>20</b></div>
+      <div class="kpi"><span>放量测试 Scale-test</span><b>7</b></div>
+      <div class="kpi"><span>平均评分 Avg Score</span><b>72.7</b></div>
+      <div class="kpi"><span>总评论样本 Reviews</span><b>2331k</b></div>
+      <div class="kpi"><span>平均评论增长 Growth</span><b>14.7%</b></div>
+    </section>
+
+    <section class="grid">
+      <div class="panel"><h2>上升品类雷达 / Rising Categories</h2>
+    <div class="hbar-row">
+      <div class="hbar-label">Lavalier Microphones</div>
+      <div class="hbar-track"><span style="width:100.0%; background:#0f766e"></span></div>
+      <div class="hbar-value">21.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Video Capture Cards</div>
+      <div class="hbar-track"><span style="width:95.2%; background:#0f766e"></span></div>
+      <div class="hbar-value">20.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Computer Cleaning</div>
+      <div class="hbar-track"><span style="width:90.5%; background:#0f766e"></span></div>
+      <div class="hbar-value">19.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">USB Hubs</div>
+      <div class="hbar-track"><span style="width:85.7%; background:#0f766e"></span></div>
+      <div class="hbar-value">18.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Cable Protectors</div>
+      <div class="hbar-track"><span style="width:85.7%; background:#0f766e"></span></div>
+      <div class="hbar-value">18.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Phone Grips</div>
+      <div class="hbar-track"><span style="width:81.0%; background:#0f766e"></span></div>
+      <div class="hbar-value">17.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Cable Management</div>
+      <div class="hbar-track"><span style="width:76.2%; background:#0f766e"></span></div>
+      <div class="hbar-value">16.0%</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">LED Strip Lights</div>
+      <div class="hbar-track"><span style="width:76.2%; background:#0f766e"></span></div>
+      <div class="hbar-value">16.0%</div>
+    </div>
+    </div>
+      <div class="panel"><h2>商品综合分排行 / Product Ranking</h2>
+    <div class="hbar-row">
+      <div class="hbar-label">Keyboard Cleaning Gel and Electron</div>
+      <div class="hbar-track"><span style="width:100.0%; background:#2563eb"></span></div>
+      <div class="hbar-value">77.9</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">4-Port USB 3.0 Hub for Laptop Desk</div>
+      <div class="hbar-track"><span style="width:99.2%; background:#2563eb"></span></div>
+      <div class="hbar-value">77.3</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Magnetic Phone Ring Holder Stand</div>
+      <div class="hbar-track"><span style="width:97.9%; background:#2563eb"></span></div>
+      <div class="hbar-value">76.3</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Silicone Cable Clips Desk Organize</div>
+      <div class="hbar-track"><span style="width:97.9%; background:#2563eb"></span></div>
+      <div class="hbar-value">76.3</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">USB TV LED Backlight Strip Kit</div>
+      <div class="hbar-track"><span style="width:97.3%; background:#2563eb"></span></div>
+      <div class="hbar-value">75.8</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Cable Protector Spiral Saver 20-Pa</div>
+      <div class="hbar-track"><span style="width:97.1%; background:#2563eb"></span></div>
+      <div class="hbar-value">75.7</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Wired USB-C Lavalier Microphone fo</div>
+      <div class="hbar-track"><span style="width:96.9%; background:#2563eb"></span></div>
+      <div class="hbar-value">75.5</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Anti-Dust Charging Port Plug Set f</div>
+      <div class="hbar-track"><span style="width:94.6%; background:#2563eb"></span></div>
+      <div class="hbar-value">73.7</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">Adjustable Foldable Phone Stand fo</div>
+      <div class="hbar-track"><span style="width:94.6%; background:#2563eb"></span></div>
+      <div class="hbar-value">73.7</div>
+    </div>
+    
+
+    <div class="hbar-row">
+      <div class="hbar-label">USB-C to USB-A Adapter 3-Pack</div>
+      <div class="hbar-track"><span style="width:94.1%; background:#2563eb"></span></div>
+      <div class="hbar-value">73.4</div>
+    </div>
+    </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>站点覆盖 / Marketplace Coverage</h2>
+        <p>日报默认盯 US / SG / UK。当前样例数据以 US 为主，接入 SG/UK 后这里会显示三站占比。</p>
+        <div class="market-stack"><span style="width:100.0%">US</span></div>
+      </div>
+      <div class="panel">
+        <h2>今日第一判断 / Top Call</h2>
+        <p>最高优先级：<b>Keyboard Cleaning Gel and Electronics Dust Cleaner Kit</b>，综合分 77.9。关键证据：评分 4.3、评论 35,000、评论增长 19%、估算月销量 6,500。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>推荐商品证据表 / Evidence Table</h2>
+      <table>
+        <thead><tr><th>商品 Product</th><th>价格 Price</th><th>评分 Rating</th><th>评论数 Reviews</th><th>评论增长 Growth</th><th>月销量估算 Sales Est.</th><th>综合分 Score</th></tr></thead>
+        <tbody>
+        <tr>
+          <td><b>Keyboard Cleaning Gel and Electronics Dust Cleaner Kit</b><small>US · Computer Cleaning</small></td>
+          <td>RM33</td>
+          <td>4.3</td>
+          <td>35,000</td>
+          <td>19%</td>
+          <td>6,500</td>
+          <td>77.9</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>4-Port USB 3.0 Hub for Laptop Desk Setup</b><small>US · USB Hubs</small></td>
+          <td>RM47</td>
+          <td>4.6</td>
+          <td>147,000</td>
+          <td>18%</td>
+          <td>9,000</td>
+          <td>77.3</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Magnetic Phone Ring Holder Stand</b><small>US · Phone Grips</small></td>
+          <td>RM33</td>
+          <td>4.4</td>
+          <td>38,000</td>
+          <td>17%</td>
+          <td>6,000</td>
+          <td>76.3</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Silicone Cable Clips Desk Organizer 6-Pack</b><small>US · Cable Management</small></td>
+          <td>RM30</td>
+          <td>4.5</td>
+          <td>60,000</td>
+          <td>16%</td>
+          <td>7,000</td>
+          <td>76.3</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>USB TV LED Backlight Strip Kit</b><small>US · LED Strip Lights</small></td>
+          <td>RM47</td>
+          <td>4.5</td>
+          <td>44,700</td>
+          <td>16%</td>
+          <td>7,600</td>
+          <td>75.8</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Cable Protector Spiral Saver 20-Pack</b><small>US · Cable Protectors</small></td>
+          <td>RM28</td>
+          <td>4.4</td>
+          <td>45,000</td>
+          <td>18%</td>
+          <td>4,800</td>
+          <td>75.7</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Wired USB-C Lavalier Microphone for Phone</b><small>US · Lavalier Microphones</small></td>
+          <td>RM47</td>
+          <td>4.3</td>
+          <td>18,000</td>
+          <td>21%</td>
+          <td>4,200</td>
+          <td>75.5</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Anti-Dust Charging Port Plug Set for USB-C Phone</b><small>US · Dust Plugs</small></td>
+          <td>RM23</td>
+          <td>4.3</td>
+          <td>21,000</td>
+          <td>15%</td>
+          <td>2,600</td>
+          <td>73.7</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Adjustable Foldable Phone Stand for Desk</b><small>US · Phone Stands</small></td>
+          <td>RM35</td>
+          <td>4.7</td>
+          <td>120,000</td>
+          <td>11%</td>
+          <td>15,000</td>
+          <td>73.7</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>USB-C to USB-A Adapter 3-Pack</b><small>US · USB Adapters</small></td>
+          <td>RM28</td>
+          <td>4.6</td>
+          <td>65,000</td>
+          <td>14%</td>
+          <td>8,500</td>
+          <td>73.4</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>3-in-1 Phone Lens Clip Macro Wide Angle Fisheye</b><small>US · Cell Phone Lens Attachments</small></td>
+          <td>RM47</td>
+          <td>4.2</td>
+          <td>28,000</td>
+          <td>10%</td>
+          <td>3,500</td>
+          <td>71.8</td>
+        </tr>
+        
+
+        <tr>
+          <td><b>Tempered Glass Screen Protector 3-Pack for iPhone</b><small>US · Screen Protectors</small></td>
+          <td>RM33</td>
+          <td>4.6</td>
+          <td>1,100,000</td>
+          <td>12%</td>
+          <td>20,000</td>
+          <td>71.5</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#1 · scale-test</div>
+              <h3>Keyboard Cleaning Gel and Electronics Dust Cleaner Kit</h3>
+              <p>US · Computer Accessories · Computer Cleaning</p>
+            </div>
+            <div class="big-score">77.9<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM33</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.3</b><span>用户评分 Rating</span></div>
+            <div><b>35,000</b><span>评论数 Reviews</span></div>
+            <div><b>19%</b><span>评论增长 Growth</span></div>
+            <div><b>6,500</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.6" style="width:14.57%; background:#2563eb"></span><span title="痛点 Pain 9.4" style="width:9.37%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">清洁效果</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">使用门槛</span><span class="tag-neg">进灰</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>keyboard crumbs; dusty car vents; laptop looks dirty; hard to clean tiny gaps</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于找不粘手、无残留、密封更好的版本，用差评担忧做信任视频。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with keyboard crumbs?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=keyboard+cleaning+gel+electronics+dust+cleaner">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#2 · scale-test</div>
+              <h3>4-Port USB 3.0 Hub for Laptop Desk Setup</h3>
+              <p>US · Computer Accessories · USB Hubs</p>
+            </div>
+            <div class="big-score">77.3<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM47</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.6</b><span>用户评分 Rating</span></div>
+            <div><b>147,000</b><span>评论数 Reviews</span></div>
+            <div><b>18%</b><span>评论增长 Growth</span></div>
+            <div><b>9,000</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 15.2" style="width:15.25%; background:#2563eb"></span><span title="痛点 Pain 8.1" style="width:8.07%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">小巧</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">杂乱</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>laptop has too few ports; messy desk cables; students need cheap setup upgrade</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于强调稳定连接、不掉线、办公/学生真实场景，不要只讲接口数量。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with laptop has too few ports?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=4+port+usb+3.0+hub">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#3 · scale-test</div>
+              <h3>Magnetic Phone Ring Holder Stand</h3>
+              <p>US · Phone Accessories · Phone Grips</p>
+            </div>
+            <div class="big-score">76.3<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM33</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.4</b><span>用户评分 Rating</span></div>
+            <div><b>38,000</b><span>评论数 Reviews</span></div>
+            <div><b>17%</b><span>评论增长 Growth</span></div>
+            <div><b>6,000</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.3" style="width:14.32%; background:#2563eb"></span><span title="痛点 Pain 8.0" style="width:7.97%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">低价</span><span class="tag-pos">轻小件</span><span class="tag-pos">使用场景清晰</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">使用门槛</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>phone slips while scrolling; hard to watch videos hands free; commuting grip</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于做强磁、强支撑、兼容手机壳版本，用甩动/支撑测试建立信任。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with phone slips while scrolling?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=magnetic+phone+ring+holder+stand">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#4 · scale-test</div>
+              <h3>Silicone Cable Clips Desk Organizer 6-Pack</h3>
+              <p>US · Computer Accessories · Cable Management</p>
+            </div>
+            <div class="big-score">76.3<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM30</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.5</b><span>用户评分 Rating</span></div>
+            <div><b>60,000</b><span>评论数 Reviews</span></div>
+            <div><b>16%</b><span>评论增长 Growth</span></div>
+            <div><b>7,000</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.3" style="width:14.35%; background:#2563eb"></span><span title="痛点 Pain 7.9" style="width:7.92%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">低价</span><span class="tag-pos">轻小件</span><span class="tag-pos">使用场景清晰</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">容易掉</span><span class="tag-neg">使用门槛</span><span class="tag-neg">杂乱</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>cables fall behind desk; messy charging corner; hard to find cable at night</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于用低价多件装解决线材乱和断裂，用before/after做强视觉。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with cables fall behind desk?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=silicone+cable+clips+desk+organizer">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#5 · scale-test</div>
+              <h3>USB TV LED Backlight Strip Kit</h3>
+              <p>US · Lighting &amp; Electronics · LED Strip Lights</p>
+            </div>
+            <div class="big-score">75.8<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM47</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.5</b><span>用户评分 Rating</span></div>
+            <div><b>44,700</b><span>评论数 Reviews</span></div>
+            <div><b>16%</b><span>评论增长 Growth</span></div>
+            <div><b>7,600</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.6" style="width:14.58%; background:#2563eb"></span><span title="痛点 Pain 9.3" style="width:9.27%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 6.0" style="width:6.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">低价</span><span class="tag-pos">轻小件</span><span class="tag-pos">使用场景清晰</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">同质化</span><span class="tag-neg">供应链质量需验证</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>watching TV in dark room; eye strain; room looks boring; cheap room upgrade</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会来自差评痛点：同质化、供应链质量需验证。找能解决这些痛点的供应链版本。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with watching TV in dark room?</li><li>Bilik nampak lagi mahal, tapi modal kecil saja.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=usb+tv+led+backlight">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#6 · scale-test</div>
+              <h3>Cable Protector Spiral Saver 20-Pack</h3>
+              <p>US · Phone Accessories · Cable Protectors</p>
+            </div>
+            <div class="big-score">75.7<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM28</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.4</b><span>用户评分 Rating</span></div>
+            <div><b>45,000</b><span>评论数 Reviews</span></div>
+            <div><b>18%</b><span>评论增长 Growth</span></div>
+            <div><b>4,800</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.0" style="width:14.00%; background:#2563eb"></span><span title="痛点 Pain 7.7" style="width:7.71%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">便宜</span><span class="tag-pos">保护</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">容易坏</span><span class="tag-neg">杂乱</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>charging cable breaks at the end; kids damage cables; cables look messy</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于用低价多件装解决线材乱和断裂，用before/after做强视觉。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with charging cable breaks at the end?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=cable+protector+spiral+saver">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#7 · scale-test</div>
+              <h3>Wired USB-C Lavalier Microphone for Phone</h3>
+              <p>US · Audio Accessories · Lavalier Microphones</p>
+            </div>
+            <div class="big-score">75.5<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM47</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.3</b><span>用户评分 Rating</span></div>
+            <div><b>18,000</b><span>评论数 Reviews</span></div>
+            <div><b>21%</b><span>评论增长 Growth</span></div>
+            <div><b>4,200</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.7" style="width:14.66%; background:#2563eb"></span><span title="痛点 Pain 7.9" style="width:7.87%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 3.0" style="width:3.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">清晰</span><span class="tag-pos">即插即用</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">噪音</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>voice sounds noisy; outdoor recording bad; TikTok seller needs clear audio</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于声音before/after，对比手机原声，面向TikTok创作者和直播卖家。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with voice sounds noisy?</li><li>Suara clear lagi senang orang percaya bila buat video jualan.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=usb+c+lavalier+microphone+phone">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#8 · test</div>
+              <h3>Anti-Dust Charging Port Plug Set for USB-C Phone</h3>
+              <p>US · Phone Accessories · Dust Plugs</p>
+            </div>
+            <div class="big-score">73.7<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM23</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.3</b><span>用户评分 Rating</span></div>
+            <div><b>21,000</b><span>评论数 Reviews</span></div>
+            <div><b>15%</b><span>评论增长 Growth</span></div>
+            <div><b>2,600</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 12.8" style="width:12.77%; background:#2563eb"></span><span title="痛点 Pain 8.0" style="width:7.97%; background:#0f766e"></span><span title="视频 Visual 12.0" style="width:12.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 4.0" style="width:4.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">保护</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">不稳定</span><span class="tag-neg">进灰</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>dust in charging port; beach and rain exposure; phone charging gets unstable</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会来自差评痛点：不稳定、进灰。找能解决这些痛点的供应链版本。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with dust in charging port?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=usb+c+charging+port+dust+plug">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#9 · test</div>
+              <h3>Adjustable Foldable Phone Stand for Desk</h3>
+              <p>US · Phone Accessories · Phone Stands</p>
+            </div>
+            <div class="big-score">73.7<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM35</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.7</b><span>用户评分 Rating</span></div>
+            <div><b>120,000</b><span>评论数 Reviews</span></div>
+            <div><b>11%</b><span>评论增长 Growth</span></div>
+            <div><b>15,000</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 13.9" style="width:13.90%; background:#2563eb"></span><span title="痛点 Pain 7.8" style="width:7.81%; background:#0f766e"></span><span title="视频 Visual 15.0" style="width:15.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 0.0" style="width:0.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">稳定</span><span class="tag-pos">可折叠</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">容易掉</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>neck hurts looking down; phone falls on desk; need hands-free video calls</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于做强磁、强支撑、兼容手机壳版本，用甩动/支撑测试建立信任。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with neck hurts looking down?</li><li>Phone hari-hari pakai, benda kecil macam ni memang terasa beza.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=adjustable+foldable+phone+stand">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+
+        <article class="evidence-card">
+          <div class="product-layout">
+            <div class="product-image">
+              
+    <div class="image-placeholder">
+      <b>IMAGE</b>
+      <span>待采集商品图<br>Waiting for image_url</span>
+    </div>
+    
+            </div>
+            <div>
+          <div class="card-head">
+            <div>
+              <div class="rank-pill">#10 · test</div>
+              <h3>USB-C to USB-A Adapter 3-Pack</h3>
+              <p>US · Computer Accessories · USB Adapters</p>
+            </div>
+            <div class="big-score">73.4<span>/100</span></div>
+          </div>
+
+          <div class="data-strip">
+            <div><b>RM28</b><span>估算售价 Est. Price</span></div>
+            <div><b>4.6</b><span>用户评分 Rating</span></div>
+            <div><b>65,000</b><span>评论数 Reviews</span></div>
+            <div><b>14%</b><span>评论增长 Growth</span></div>
+            <div><b>8,500</b><span>月销估算 Sales Est.</span></div>
+          </div>
+
+          <div class="stack"><span title="趋势 Trend 14.0" style="width:14.03%; background:#2563eb"></span><span title="痛点 Pain 8.3" style="width:8.33%; background:#0f766e"></span><span title="视频 Visual 12.0" style="width:12.00%; background:#b45309"></span><span title="马来 Fit 15.0" style="width:15.00%; background:#7c3aed"></span><span title="价格 Price 10.0" style="width:10.00%; background:#db2777"></span><span title="物流 Logistics 8.0" style="width:8.00%; background:#0891b2"></span><span title="竞争 Competition 2.0" style="width:2.00%; background:#475569"></span><span title="合规 Safety 4.0" style="width:4.00%; background:#16a34a"></span></div>
+          <div class="legend-mini">
+            <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="insight-grid">
+            <section>
+              <h4>正向评论标签 Positive Tags</h4>
+              <div class="tags"><span class="tag-pos">低价</span><span class="tag-pos">轻小件</span><span class="tag-pos">使用场景清晰</span></div>
+            </section>
+            <section>
+              <h4>负向评论标签 Negative Tags</h4>
+              <div class="tags"><span class="tag-neg">同质化</span><span class="tag-neg">供应链质量需验证</span></div>
+            </section>
+          </div>
+
+          <div class="comment-box">
+            <h4>差评/痛点摘要 Review Pain Points</h4>
+            <p>new laptop has no USB-A port; old accessories cannot connect; easy to lose adapters</p>
+          </div>
+          <div class="opportunity">
+            <h4>市场机会判断 Market Opportunity</h4>
+            <p>机会在于强调稳定连接、不掉线、办公/学生真实场景，不要只讲接口数量。</p>
+          </div>
+          <div class="hooks">
+            <h4>今日可测 Hook / Test Hooks</h4>
+            <ol><li>Still dealing with new laptop has no USB-A port?</li><li>Meja kerja nampak simple, tapi masalah cable dan port selalu kacau.</li></ol>
+          </div>
+          <a href="https://www.amazon.com/s?k=usb+c+to+usb+adapter+3+pack">Amazon 搜索参考 / Search Reference</a>
+            </div>
+          </div>
+        </article>
+        
+  </main>
+</body>
+</html>

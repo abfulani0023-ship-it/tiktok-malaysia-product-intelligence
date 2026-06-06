@@ -1,0 +1,47 @@
+{
+  "target_market": "TikTok Malaysia",
+  "amazon_marketplaces": [
+    {
+      "code": "US",
+      "domain": "amazon.com",
+      "role": "primary_trend_source",
+      "reason": "Largest review base and strongest early trend signal for gadgets, accessories, and problem-solution products."
+    },
+    {
+      "code": "SG",
+      "domain": "amazon.sg",
+      "role": "sea_relevance_check",
+      "reason": "Closest Amazon marketplace proxy for Southeast Asian English-speaking consumers."
+    },
+    {
+      "code": "UK",
+      "domain": "amazon.co.uk",
+      "role": "english_market_validation",
+      "reason": "Useful secondary English-market signal for home, office, lifestyle, and electronics accessories."
+    }
+  ],
+  "selection_hypothesis": "If a product is exploding or about to explode on Amazon US, SG, or UK, it deserves fast validation for TikTok Malaysia.",
+  "daily_focus_categories": [
+    "3C electronics",
+    "phone accessories",
+    "computer accessories",
+    "car electronics",
+    "desk setup gadgets",
+    "creator tools",
+    "small smart home accessories"
+  ],
+  "default_filters": {
+    "price_myr_min": 15,
+    "price_myr_max": 80,
+    "prefer_lightweight": true,
+    "exclude_high_ip_risk": true,
+    "exclude_high_after_sales_risk": true,
+    "exclude_medical_or_exaggerated_claims": true
+  },
+  "daily_report_outputs": {
+    "hot_categories": 10,
+    "rising_categories": 10,
+    "candidate_products": 30,
+    "recommended_products": 10
+  }
+}
