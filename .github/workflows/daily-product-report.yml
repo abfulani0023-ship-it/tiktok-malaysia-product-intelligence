@@ -67,6 +67,16 @@ jobs:
           REPORT_RECIPIENT: ${{ secrets.REPORT_RECIPIENT }}
         run: python3 src/send_daily_email.py
 
+      - name: Send Feishu group report
+        if: steps.sent-check.outputs.already_sent != 'true'
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          FEISHU_CHAT_ID: ${{ secrets.FEISHU_CHAT_ID }}
+        run: python3 src/send_feishu_message.py
+
       - name: Mark today's report as sent
         if: steps.sent-check.outputs.already_sent != 'true'
         run: |
