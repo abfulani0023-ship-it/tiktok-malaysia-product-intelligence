@@ -204,11 +204,13 @@ def top10_board(rows, title, subtitle):
     cards = []
     for index, row in enumerate(rows[:10], start=1):
         risk = risk_warning(row)
+        product_url = row.get("product_url") or "#"
         cards.append(f"""
         <div class="top10-item">
           <div class="top10-rank">{index}</div>
           <div class="top10-main">
             <b>{esc(row.get("title"))}</b>
+            <a class="top10-link" href="{esc(product_url)}">打开Amazon页面 / Open Amazon</a>
             <span>{esc(zh_explain(row))}</span>
             <small>{esc(rise_reason(row))}</small>
           </div>
@@ -427,6 +429,7 @@ def main():
     .top10-item:first-of-type {{ border-top:0; }}
     .top10-rank {{ width:28px; height:28px; display:grid; place-items:center; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-weight:800; }}
     .top10-main b {{ display:block; font-size:15px; line-height:1.3; }}
+    .top10-link {{ display:inline-block; margin-top:4px; color:#2563eb; font-size:12px; font-weight:700; }}
     .top10-main span {{ display:block; color:#334155; font-size:13px; margin-top:4px; }}
     .top10-main small {{ display:block; color:var(--muted); font-size:12px; margin-top:4px; }}
     .top10-score {{ text-align:right; }}
