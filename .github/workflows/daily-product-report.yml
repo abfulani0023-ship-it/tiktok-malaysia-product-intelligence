@@ -2,9 +2,15 @@ name: Daily Amazon to TikTok MY Product Report
 
 on:
   schedule:
-    # 09:00 Asia/Shanghai / Malaysia time = 01:00 UTC
-    - cron: "0 1 * * *"
+    # 09:13 Asia/Shanghai / Malaysia time = 01:13 UTC.
+    # Avoid the top of the hour because GitHub scheduled workflows can be delayed or dropped during peak load.
+    - cron: "13 1 * * *"
+    # Backup run at 09:33. The sent marker below prevents duplicate emails on days when 09:13 succeeds.
+    - cron: "33 1 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   send-report:
@@ -14,18 +20,45 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      - name: Skip if today's report was already sent
+        id: sent-check
+        run: |
+          SENT_MARKER="outputs/sent-$(TZ=Asia/Shanghai date +%F).txt"
+          echo "sent_marker=$SENT_MARKER" >> "$GITHUB_OUTPUT"
+          if [ -f "$SENT_MARKER" ]; then
+            echo "already_sent=true" >> "$GITHUB_OUTPUT"
+            echo "Daily report was already sent today: $SENT_MARKER"
+          else
+            echo "already_sent=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate daily report
+        if: steps.sent-check.outputs.already_sent != 'true'
         run: python3 src/run_pipeline.py
 
       - name: Send Gmail report
+        if: steps.sent-check.outputs.already_sent != 'true'
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           REPORT_RECIPIENT: ${{ secrets.REPORT_RECIPIENT }}
         run: python3 src/send_daily_email.py
+
+      - name: Mark today's report as sent
+        if: steps.sent-check.outputs.already_sent != 'true'
+        run: |
+          mkdir -p outputs
+          echo "sent_at_utc=$(date -u +%FT%TZ)" > "${{ steps.sent-check.outputs.sent_marker }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.sent-check.outputs.sent_marker }}"
+          git commit -m "Mark daily report sent $(TZ=Asia/Shanghai date +%F)" || exit 0
+          git push
