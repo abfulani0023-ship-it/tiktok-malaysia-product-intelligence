@@ -121,6 +121,42 @@ def opportunity(row):
     return f"机会来自差评痛点：{'、'.join(neg)}。找能解决这些痛点的供应链版本。"
 
 
+def zh_explain(row):
+    title = (row.get("title") or "").lower()
+    if "cleaning" in title or "dust" in title:
+        return "键盘、车缝、电脑缝隙清洁工具，适合做强 before/after 演示。"
+    if "hub" in title or "adapter" in title or "card reader" in title:
+        return "电脑/手机接口扩展类小配件，解决办公、学生、直播设备连接问题。"
+    if "ring" in title or "stand" in title or "mount" in title:
+        return "手机支架/固定类配件，适合通勤、办公桌、车内导航场景。"
+    if "cable" in title or "charger" in title or "wireless" in title:
+        return "充电与线材类刚需小件，价格低、复购高，但要重点验证发热和耐用。"
+    if "microphone" in title:
+        return "短视频/直播收音配件，适合用声音对比证明价值。"
+    return "3C数码轻小件，优先看能否用一个镜头讲清楚痛点和效果。"
+
+
+def rise_reason(row):
+    return (
+        f"评论增长 {fnum(row.get('review_growth_30d')):.0f}%、"
+        f"月销估算 {fmt_int(row.get('monthly_sales_est'))}、"
+        f"BSR {fmt_int(row.get('bsr_rank'))}，说明 Amazon 侧已有需求信号。"
+    )
+
+
+def risk_warning(row):
+    warnings = []
+    if fnum(row.get("score_competition_risk")) <= 2:
+        warnings.append("竞争偏高")
+    if fnum(row.get("score_logistics_risk")) <= 6:
+        warnings.append("物流/售后需验证")
+    if fnum(row.get("score_compliance_risk")) <= 3:
+        warnings.append("合规风险需检查")
+    if "charger" in (row.get("title") or "").lower():
+        warnings.append("充电器要看认证和发热")
+    return "、".join(warnings) if warnings else "风险较低，重点验证供应链质量。"
+
+
 def category_rows(rows):
     grouped = defaultdict(list)
     for row in rows:
@@ -162,6 +198,37 @@ def product_rank_chart(rows):
         horizontal_bar(row.get("title", "")[:34], fnum(row.get("total_score")), max_score, "#2563eb")
         for row in top
     )
+
+
+def top10_board(rows, title, subtitle):
+    cards = []
+    for index, row in enumerate(rows[:10], start=1):
+        risk = risk_warning(row)
+        cards.append(f"""
+        <div class="top10-item">
+          <div class="top10-rank">{index}</div>
+          <div class="top10-main">
+            <b>{esc(row.get("title"))}</b>
+            <span>{esc(zh_explain(row))}</span>
+            <small>{esc(rise_reason(row))}</small>
+          </div>
+          <div class="top10-score">
+            <strong>{fnum(row.get("total_score")):.1f}</strong>
+            <span>{esc(risk)}</span>
+          </div>
+        </div>
+        """)
+    return f"""
+    <section class="panel top10-panel">
+      <div class="section-head">
+        <div>
+          <h2>{esc(title)}</h2>
+          <p>{esc(subtitle)}</p>
+        </div>
+      </div>
+      {''.join(cards)}
+    </section>
+    """
 
 
 def marketplace_mix(rows):
@@ -237,10 +304,11 @@ def product_cards(rows, scripts):
             </div>
             <div>
           <div class="card-head">
-            <div>
+          <div>
               <div class="rank-pill">#{index} · {esc(row.get("decision"))}</div>
               <h3>{esc(row.get("title"))}</h3>
               <p>{esc(row.get("marketplace"))} · {esc(row.get("category"))} · {esc(row.get("bsr_category"))}</p>
+              <p class="zh-explain">{esc(zh_explain(row))}</p>
             </div>
             <div class="big-score">{fnum(row.get("total_score")):.1f}<span>/100</span></div>
           </div>
@@ -256,6 +324,11 @@ def product_cards(rows, scripts):
           <div class="stack">{score_stack(row)}</div>
           <div class="legend-mini">
             <span>趋势</span><span>痛点</span><span>视频</span><span>马来</span><span>价格</span><span>物流</span><span>竞争</span><span>合规</span>
+          </div>
+
+          <div class="reason-row">
+            <section><h4>上涨原因 Rise Reason</h4><p>{esc(rise_reason(row))}</p></section>
+            <section><h4>风险预警 Risk Warning</h4><p>{esc(risk_warning(row))}</p></section>
           </div>
 
           <div class="insight-grid">
@@ -300,6 +373,8 @@ def main():
     total_reviews = sum(fnum(row.get("review_count")) for row in rows)
     avg_growth = sum(fnum(row.get("review_growth_30d")) for row in rows) / max(total, 1)
     top = rows[0] if rows else {}
+    best_video = max(rows[:10], key=lambda row: fnum(row.get("score_tiktok_visual_potential")), default={})
+    highest_risk = min(rows[:10], key=lambda row: fnum(row.get("score_compliance_risk")) + fnum(row.get("score_logistics_risk")) + fnum(row.get("score_competition_risk")), default={})
 
     html_doc = f"""<!doctype html>
 <html lang="zh-CN">
@@ -318,6 +393,10 @@ def main():
     .hero {{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:26px; margin-bottom:14px; }}
     .hero h1 {{ margin:0 0 8px; font-size:30px; letter-spacing:0; }}
     .hero p {{ margin:0; color:var(--muted); max-width:900px; }}
+    .hero-callouts {{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }}
+    .hero-callout {{ border:1px solid var(--line); border-radius:8px; background:#f8fafc; padding:12px; }}
+    .hero-callout span {{ display:block; color:var(--muted); font-size:12px; margin-bottom:4px; }}
+    .hero-callout b {{ font-size:16px; line-height:1.25; }}
     .meta {{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }}
     .meta span,.tag-pos,.tag-neg {{ border:1px solid var(--line); border-radius:999px; padding:5px 10px; font-size:12px; background:#fbfdff; }}
     .kpis {{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }}
@@ -326,6 +405,8 @@ def main():
     .kpi b {{ display:block; font-size:25px; margin-top:4px; }}
     .grid {{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }}
     .panel,.evidence-card {{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:18px; }}
+    .section-head {{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px; }}
+    .section-head p {{ margin:4px 0 0; color:var(--muted); }}
     h2 {{ margin:0 0 12px; font-size:20px; letter-spacing:0; }}
     h3 {{ margin:0 0 5px; font-size:19px; letter-spacing:0; }}
     h4 {{ margin:0 0 7px; font-size:13px; letter-spacing:0; }}
@@ -341,8 +422,19 @@ def main():
     th {{ color:var(--muted); font-size:12px; text-align:left; }}
     td small {{ display:block; color:var(--muted); margin-top:3px; }}
     .evidence-card {{ margin-bottom:14px; break-inside:avoid; }}
+    .top10-panel {{ margin-bottom:14px; }}
+    .top10-item {{ display:grid; grid-template-columns:34px 1fr 150px; gap:12px; align-items:start; border-top:1px solid var(--line); padding:12px 0; }}
+    .top10-item:first-of-type {{ border-top:0; }}
+    .top10-rank {{ width:28px; height:28px; display:grid; place-items:center; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-weight:800; }}
+    .top10-main b {{ display:block; font-size:15px; line-height:1.3; }}
+    .top10-main span {{ display:block; color:#334155; font-size:13px; margin-top:4px; }}
+    .top10-main small {{ display:block; color:var(--muted); font-size:12px; margin-top:4px; }}
+    .top10-score {{ text-align:right; }}
+    .top10-score strong {{ display:block; color:#0f766e; font-size:22px; }}
+    .top10-score span {{ display:block; color:#be123c; font-size:12px; margin-top:4px; }}
     .card-head {{ display:grid; grid-template-columns:1fr auto; gap:12px; align-items:start; }}
     .card-head p {{ margin:0; color:var(--muted); font-size:13px; }}
+    .card-head .zh-explain {{ color:#334155; margin-top:6px; }}
     .rank-pill {{ display:inline-block; background:#ecfdf5; color:#0f766e; border:1px solid #99f6e4; border-radius:999px; padding:3px 8px; font-size:12px; margin-bottom:8px; }}
     .big-score {{ text-align:right; font-size:36px; font-weight:800; color:#0f766e; }}
     .big-score span {{ display:block; color:var(--muted); font-size:12px; font-weight:400; }}
@@ -353,6 +445,9 @@ def main():
     .stack {{ display:flex; height:14px; border-radius:999px; overflow:hidden; background:#edf2f7; }}
     .stack span {{ display:block; height:100%; }}
     .legend-mini {{ display:grid; grid-template-columns:repeat(8,1fr); gap:4px; color:var(--muted); font-size:10px; margin-top:5px; }}
+    .reason-row {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }}
+    .reason-row section {{ border:1px solid var(--line); border-radius:6px; background:#fbfdff; padding:12px; }}
+    .reason-row p {{ margin:0; font-size:13px; }}
     .insight-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }}
     .tags {{ display:flex; flex-wrap:wrap; gap:6px; }}
     .tag-pos {{ border-color:#99f6e4; color:#0f766e; background:#f0fdfa; }}
@@ -400,7 +495,7 @@ def main():
       font-size:12px;
       line-height:1.4;
     }}
-    @media (max-width:900px) {{ .kpis,.grid,.data-strip,.insight-grid,.product-layout {{ grid-template-columns:1fr; }} .hbar-row {{ grid-template-columns:1fr; }} .product-image {{ width:100%; max-width:260px; position:static; }} }}
+    @media (max-width:900px) {{ .kpis,.grid,.data-strip,.insight-grid,.product-layout,.hero-callouts,.reason-row {{ grid-template-columns:1fr; }} .hbar-row {{ grid-template-columns:1fr; }} .product-image {{ width:100%; max-width:260px; position:static; }} .top10-item {{ grid-template-columns:30px 1fr; }} .top10-score {{ grid-column:2; text-align:left; }} }}
     @page {{ size:A4; margin:12mm; }}
     @media print {{
       body {{ background:#fff; font-size:11px; }}
@@ -413,10 +508,15 @@ def main():
 <body>
   <main class="page">
     <section class="hero">
-      <h1>每日跨境选品数据看板 / Daily Product Intelligence</h1>
-      <p>监控 Amazon {esc(markets)} 的热门/上升商品，把“可能在 Amazon 爆或即将爆”的商品转成 TikTok Malaysia 测试池。核心英文指标会保留，中文负责解释，方便你快速判断。</p>
+      <h1>3C数码选品商业情报日报 / Product Intelligence Brief</h1>
+      <p>围绕 Amazon {esc(markets)} 的热门/上升 3C 小件，把“可能在 Amazon 爆或即将爆”的商品转成 TikTok Malaysia 测试池。页面按手机阅读优化，结论优先，证据跟随。</p>
       <div class="meta">
         <span>目标 Target：TikTok Malaysia</span><span>站点 Source：Amazon {esc(markets)}</span><span>价格 Price：RM15-RM80</span><span>重点 Focus：3C数码轻小件</span>
+      </div>
+      <div class="hero-callouts">
+        <div class="hero-callout"><span>今日Top1</span><b>{esc(top.get("title"))}</b></div>
+        <div class="hero-callout"><span>最值得拍视频</span><b>{esc(best_video.get("title"))}</b></div>
+        <div class="hero-callout"><span>重点风险预警</span><b>{esc(risk_warning(highest_risk))}</b></div>
       </div>
     </section>
 
@@ -432,6 +532,9 @@ def main():
       <div class="panel"><h2>上升品类雷达 / Rising Categories</h2>{category_chart(rows)}</div>
       <div class="panel"><h2>商品综合分排行 / Product Ranking</h2>{product_rank_chart(rows)}</div>
     </section>
+
+    {top10_board(rows, "今日3C数码Top10 / Today Top10", "按爆品机会评分排序，优先看综合分、上涨原因、风险预警和视频可拍性。")}
+    {top10_board(rows, "本周3C数码Top10 / Weekly Watchlist", "当前版本用最近样本生成周榜视图；接入7日历史后将自动改为真实周榜。")}
 
     <section class="grid">
       <div class="panel">
