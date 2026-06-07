@@ -208,10 +208,15 @@ def product_card(row, index, scripts):
 def compact_rank(rows, title):
     items = []
     for index, row in enumerate(rows[:10], start=1):
+        product_url = row.get("product_url") or "#"
         items.append(f"""
         <tr>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;color:#64748b;">{index}</td>
-          <td style="padding:8px;border-bottom:1px solid #e5e7eb;"><b>{esc(short_title(row.get("title"), 46))}</b><br><span style="color:#64748b;">{money(row.get("price_myr_est"))} · {fnum(row.get("review_growth_30d")):.0f}%增长 · {fmt_int(row.get("review_count"))}评论</span></td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
+            <b>{esc(short_title(row.get("title"), 46))}</b><br>
+            <a href="{esc(product_url)}" style="display:inline-block;margin:3px 0;color:#2563eb;font-size:12px;text-decoration:none;">打开Amazon页面 / Open Amazon</a><br>
+            <span style="color:#64748b;">{money(row.get("price_myr_est"))} · {fnum(row.get("review_growth_30d")):.0f}%增长 · {fmt_int(row.get("review_count"))}评论</span>
+          </td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;"><b>{fnum(row.get("total_score")):.1f}</b></td>
         </tr>
         """)
