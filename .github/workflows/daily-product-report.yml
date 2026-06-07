@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: daily-product-report-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   send-report:
     runs-on: ubuntu-latest
@@ -33,12 +37,23 @@ jobs:
         run: |
           SENT_MARKER="outputs/sent-$(TZ=Asia/Shanghai date +%F).txt"
           echo "sent_marker=$SENT_MARKER" >> "$GITHUB_OUTPUT"
-          if [ -f "$SENT_MARKER" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -f "$SENT_MARKER" ]; then
             echo "already_sent=true" >> "$GITHUB_OUTPUT"
             echo "Daily report was already sent today: $SENT_MARKER"
           else
             echo "already_sent=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Check Gmail secrets
+        if: steps.sent-check.outputs.already_sent != 'true'
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_RECIPIENT: ${{ secrets.REPORT_RECIPIENT }}
+        run: |
+          test -n "$GMAIL_USER" || (echo "Missing secret: GMAIL_USER" && exit 1)
+          test -n "$GMAIL_APP_PASSWORD" || (echo "Missing secret: GMAIL_APP_PASSWORD" && exit 1)
+          test -n "$REPORT_RECIPIENT" || (echo "Missing secret: REPORT_RECIPIENT" && exit 1)
 
       - name: Generate daily report
         if: steps.sent-check.outputs.already_sent != 'true'
